@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import './SignUpPage.css'
-import axios from 'axios'
+import apiClient, { AUTH_TOKEN_KEY } from '../../apiClient'
 
 function SignUpPage() {
   const navigate = useNavigate()
@@ -10,11 +10,19 @@ function SignUpPage() {
     const formData = new FormData(event.currentTarget)
     const name = formData.get('name')
     const email = formData.get('email')
+    const password = formData.get('password')
 
     try {
-      await axios.post('http://localhost:3000/signup', { name, email })
-      const loginResponse = await axios.post('http://localhost:3000/login', { email })
-      const user = loginResponse.data?.user
+      const signupResponse = await apiClient.post('/signup', { name, email, password })
+      console.log("🚀 ~ handleSubmit ~ signupResponse:", signupResponse)
+      const signupToken = signupResponse.data?.user?.token
+      console.log("🚀 ~ handleSubmit ~ signupToken:", signupToken)
+      const user = signupResponse.data?.user
+
+      if (signupToken) {
+        localStorage.setItem(AUTH_TOKEN_KEY, signupToken)
+      }
+
       localStorage.setItem('customerId', String(user?.c_id || ''))
       localStorage.setItem('customerName', user?.c_name || (typeof name === 'string' ? name : 'User'))
       navigate('/products', {
@@ -55,6 +63,16 @@ function SignUpPage() {
             type="email"
             autoComplete="email"
             placeholder="Enter your email"
+            required
+          />
+
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Create a password"
             required
           />
 

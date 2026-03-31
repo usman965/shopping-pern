@@ -1,27 +1,41 @@
 import express from "express";
 
 import { Client } from "pg";
+import Cryptr from "cryptr";
+import jwt from "jsonwebtoken";
 import cors from "cors";
+import "dotenv/config";
+import authenticateToken from "./middlewares/tokenValidation.js";
+
+console.log("🚀 ~ process.env.CRYPTR_SECRET:", process.env.CRYPTR_SECRET);
+
+const cryptr = new Cryptr(process.env.CRYPTR_SECRET);
 
 const client = new Client({
-  user: "postgres",
-  password: "1234",
-  host: "localhost",
-  port: 5432,
-  database: "shopping_center",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT || 5432),
+  database: process.env.DB_NAME,
+  ssl:
+    process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
 
 const app = express();
-const port = 3000;
+const port = Number(process.env.PORT || 3000);
+// const allowedOrigin = process.env.CORS_ORIGIN || "*";
 app.use(cors());
 app.use(express.json());
 
 app.post("/signup", (req, res) => {
   console.log("🚀 ~ req.body:", req.body);
-  const { name, email } = req.body;
-  const query = "INSERT INTO customers (c_name, c_email) VALUES ($1, $2)";
+
+  const { name, email, password } = req.body;
+  const encryptedPassword = cryptr.encrypt(password);
+  const query =
+    "INSERT INTO customers (c_name, c_email, password) VALUES ($1, $2, $3) RETURNING c_id";
   console.log("🚀 ~ query:", query);
-  client.query(query, [name, email], (err, result) => {
+  client.query(query, [name, email, encryptedPassword], (err, result) => {
     console.log("🚀 ~ result:", result);
     if (err) {
       console.error("Error inserting user", err);
@@ -30,11 +44,24 @@ app.post("/signup", (req, res) => {
         success: false,
       });
     } else {
+      const user = {
+        email: email,
+        name: name,
+        c_id: result.rows[0]?.c_id,
+      };
+      console.log("🚀 ~ user:", user);
+
+      const token = jwt.sign(user, process.env.CRYPTR_SECRET, {
+        expiresIn: "1h",
+      }); // Token expires in 1 hour
+      console.log("🚀 ~ token:", token);
+
       res.status(200).send({
         message: "User inserted successfully",
         user: {
           name: name,
           email: email,
+          token: token,
         },
         success: true,
       });
@@ -43,7 +70,9 @@ app.post("/signup", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const { email } = req.body;
+  const { email, password } = req.body;
+
+
   const query = "SELECT * FROM customers WHERE c_email = $1";
   client.query(query, [email], (err, result) => {
     console.log("🚀 ~ result:", result);
@@ -55,11 +84,16 @@ app.post("/login", (req, res) => {
       });
     } else {
       if (result.rows.length > 0) {
-        res.status(200).send({
-          message: "User logged in successfully",
-          user: result.rows[0],
-          success: true,
-        });
+        const user = result.rows[0];
+        const decryptedPassword = cryptr.decrypt(user.password);  
+        console.log("🚀 ~ decryptedPassword:", decryptedPassword)
+        if (decryptedPassword === password) {
+          res.status(200).send({
+            message: "User logged in successfully",
+            user: user,
+            success: true,
+          });
+        }
       } else {
         res.status(401).send({
           message: "Invalid email or password",
@@ -70,7 +104,19 @@ app.post("/login", (req, res) => {
   });
 });
 
-app.get("/products", (req, res) => {
+
+app.get("logout", authenticateToken, (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+
+  console.log("🚀 ~ token:", token);
+  res.status(200).send({
+    message: "Logged out successfully",
+    success: true,
+  });
+});
+
+
+app.get("/products", authenticateToken, (req, res) => {
   const query = "SELECT * FROM products";
   client.query(query, (err, result) => {
     console.log("🚀 ~ result:", result);
@@ -90,8 +136,10 @@ app.get("/products", (req, res) => {
   });
 });
 
-app.post("/purchase", (req, res) => {
-  const { product_id, customer_id, quantity } = req.body;
+app.post("/purchase", authenticateToken, (req, res) => {
+  const customer_id = req.user.c_id;
+  console.log("🚀 ~ customcdcer_id:", customer_id);
+  const { product_id, quantity } = req.body;
   const query = "INSERT INTO Orders (c_id) VALUES ($1) RETURNING o_id";
   client.query(query, [customer_id], (err, result) => {
     console.log("🚀 ~ result:", result);
@@ -123,12 +171,12 @@ app.post("/purchase", (req, res) => {
   });
 });
 
-app.get("/purchases/:customerId", (req, res) => {
-  const { customerId } = req.params;
+app.get("/purchases", authenticateToken, (req, res) => {
+  const customer_id = req.user.c_id;
   const query = `
  select orders.o_id, orders.c_id, customers.c_name, order_items.item_count, products.p_name from order_items join products ON products.p_id=order_items.p_id Join orders ON orders.o_id = order_items.o_id Join customers ON customers.c_id= orders.c_id WHERE orders.c_id = $1;
   `;
-  client.query(query, [customerId], (err, result) => {
+  client.query(query, [customer_id], (err, result) => {
     console.log("🚀 ~ result:", result);
     if (err) {
       console.error("Error fetching purchases", err);
@@ -146,10 +194,10 @@ app.get("/purchases/:customerId", (req, res) => {
   });
 });
 
-app.delete("/remove-purchase/:orderId", (req, res) => {
-  console.log("🚀 ~ req.params:", req.params)
+app.delete("/remove-purchase/:orderId", authenticateToken, (req, res) => {
+
   const { orderId } = req.params;
-  console.log("🚀 ~ orderId:", orderId)
+  console.log("🚀 ~ orderId:", orderId);
   const query = `
    DELETE FROM order_items WHERE o_id = $1;
     `;

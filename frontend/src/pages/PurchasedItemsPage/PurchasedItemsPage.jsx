@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import axios from 'axios'
 import './PurchasedItemsPage.css'
+import apiClient from '../../apiClient'
+import AuthBar from '../../components/AuthBar/AuthBar'
 
 function PurchasedItemsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const params = useParams()
-  const customerId = Number(params.customerId || location.state?.customerId || localStorage.getItem('customerId')) || null
   const customerName = location.state?.name || localStorage.getItem('customerName') || 'User'
   const [purchases, setPurchases] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -16,14 +16,10 @@ function PurchasedItemsPage() {
 
   useEffect(() => {
     const fetchPurchases = async () => {
-      if (!customerId) {
-        setErrorMessage('Please login first to see purchased items.')
-        setIsLoading(false)
-        return
-      }
+
 
       try {
-        const response = await axios.get(`http://localhost:3000/purchases/${customerId}`)
+        const response = await apiClient.get(`/purchases`)
         setPurchases(response.data?.purchases || [])
       } catch (error) {
         console.error(error)
@@ -34,7 +30,7 @@ function PurchasedItemsPage() {
     }
 
     fetchPurchases()
-  }, [customerId])
+  }, [])
 
   const handleRemovePurchase = async (orderId) => {
     if (!orderId) {
@@ -43,7 +39,7 @@ function PurchasedItemsPage() {
     }
 
     try {
-      await axios.delete(`http://localhost:3000/remove-purchase/${orderId}`)
+      await apiClient.delete(`/remove-purchase/${orderId}`)
       setPurchases((currentPurchases) =>
         currentPurchases.filter((purchase) => purchase.o_id !== orderId),
       )
@@ -55,10 +51,11 @@ function PurchasedItemsPage() {
 
   return (
     <main className="purchases-page">
+      <AuthBar userName={displayName} />
       <section className="purchases-card" aria-labelledby="purchases-heading">
         <h1 id="purchases-heading">Purchased Items</h1>
         <p className="purchases-subtitle">{displayName}, here are your purchases.</p>
-        <button type="button" className="back-button" onClick={() => navigate('/products', { state: { name: customerName, customerId } })}>
+        <button type="button" className="back-button" onClick={() => navigate('/products', { state: { name: customerName } })}>
           Back to Products
         </button>
 

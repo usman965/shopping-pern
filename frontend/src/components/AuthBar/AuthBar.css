@@ -1,0 +1,37 @@
+.auth-bar {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(11, 14, 24, 0.85);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+}
+
+.auth-bar-text {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.auth-bar-logout {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #dc2626;
+  color: #fff;
+}
+
+.auth-bar-logout:hover {
+  background: #b91c1c;
+}

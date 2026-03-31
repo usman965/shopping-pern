@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import './LoginPage.css'
+import apiClient, { AUTH_TOKEN_KEY } from '../../apiClient'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -9,14 +9,20 @@ function LoginPage() {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     const email = formData.get('email')
+    const password = formData.get('password')
 
     try {
-      const response = await axios.post('http://localhost:3000/login', { email })
+      const response = await apiClient.post('/login', { email, password })
+      const token = response.data?.token
       const user = response.data?.user
 
       if (!user) {
         window.alert('No user found with this email.')
         return
+      }
+
+      if (token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, token)
       }
 
       localStorage.setItem('customerId', String(user.c_id || ''))
@@ -44,6 +50,16 @@ function LoginPage() {
             type="email"
             autoComplete="email"
             placeholder="Enter your email"
+            required
+          />
+
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Enter your password"
             required
           />
 
