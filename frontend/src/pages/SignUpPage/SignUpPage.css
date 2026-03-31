@@ -1,0 +1,83 @@
+.signup-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.signup-card {
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  text-align: left;
+  background-color: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.signup-subtitle {
+  margin-top: -8px;
+  margin-bottom: 24px;
+  color: var(--text);
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.signup-form label {
+  color: var(--text-h);
+  font-size: 0.95rem;
+}
+
+.signup-form input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  background: transparent;
+  color: var(--text-h);
+  font-size: 1rem;
+}
+
+.signup-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.signup-form button {
+  margin-top: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  background: var(--accent);
+  transition: opacity 0.2s ease;
+}
+
+.signup-form button:hover {
+  opacity: 0.9;
+}
+
+.auth-switch {
+  margin-top: 14px;
+  color: var(--text);
+}
+
+.auth-switch button {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}

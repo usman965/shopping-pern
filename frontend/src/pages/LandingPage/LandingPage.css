@@ -1,0 +1,55 @@
+.landing-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.landing-card {
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  background-color: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.landing-subtitle {
+  margin-top: -8px;
+  margin-bottom: 24px;
+  color: var(--text);
+}
+
+.landing-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.landing-button {
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  background: var(--accent);
+}
+
+.landing-button.secondary {
+  color: var(--accent);
+  background: transparent;
+  border-color: var(--accent);
+}
+
+.landing-button.outline {
+  color: var(--text-h);
+  background: transparent;
+  border-color: var(--border);
+}
