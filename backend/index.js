@@ -87,16 +87,26 @@ app.post("/login", (req, res) => {
     } else {
       if (result.rows.length > 0) {
         const user = result.rows[0];
-        const token = jwt.sign(user, process.env.CRYPTR_SECRET, {
-          expiresIn: "1h",
-        });
+  
         const decryptedPassword = cryptr.decrypt(user.password);  
         console.log("🚀 ~ decryptedPassword:", decryptedPassword)
         if (decryptedPassword === password) {
+
+          const token = jwt.sign(user, process.env.CRYPTR_SECRET, {
+            expiresIn: "1h",
+          });
+
+
           res.status(200).send({
             message: "User logged in successfully",
             user: {...user,token:token},
             success: true,
+          });
+        }
+        else {
+          res.status(401).send({
+            message: "Invalid email or password",
+            success: false,
           });
         }
       } else {
