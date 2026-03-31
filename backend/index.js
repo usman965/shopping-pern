@@ -21,6 +21,8 @@ const client = new Client({
     process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
 
+
+
 const app = express();
 const port = Number(process.env.PORT || 3000);
 // const allowedOrigin = process.env.CORS_ORIGIN || "*";
