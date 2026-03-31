@@ -11,6 +11,8 @@ const client = new Client({
   database: "shopping_center",
 });
 
+
+
 const app = express();
 const port = 3000;
 app.use(cors());
