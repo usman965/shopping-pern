@@ -13,7 +13,8 @@ function LoginPage() {
 
     try {
       const response = await apiClient.post('/login', { email, password })
-      const token = response.data?.token
+      console.log("🚀 ~ handleSubmit ~ response:", response)
+      const token = response.data?.user?.token
       const user = response.data?.user
 
       if (!user) {
