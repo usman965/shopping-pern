@@ -1,0 +1,41 @@
+.site-brand {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(11, 14, 24, 0.85);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--text-h);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+@media (prefers-color-scheme: light) {
+  .site-brand {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+
+.site-brand:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.site-brand-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.site-brand-name {
+  white-space: nowrap;
+}
