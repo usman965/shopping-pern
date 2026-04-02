@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import './ProductsPage.css'
 import apiClient from '../../apiClient'
+import { notifyCartCountChanged } from '../../cartEvents'
 import AuthBar from '../../components/AuthBar/AuthBar'
 
 function ProductsPage() {
@@ -31,11 +32,12 @@ function ProductsPage() {
   const handlePurchase = async (product) => {
 
     try {
-      await apiClient.post('/purchase', {
+      await apiClient.post('/add-to-cart', {
         product_id: product.p_id,
         quantity: 1,
       })
-      window.alert(`Purchased ${product.p_name} successfully.`)
+      notifyCartCountChanged()
+      window.alert(`Added to Cart ${product.p_name} successfully.`)
     } catch (error) {
       console.error(error)
       window.alert(`Failed to purchase ${product.p_name}.`)
@@ -50,16 +52,7 @@ function ProductsPage() {
         <p className="products-subtitle">
           Welcome {registeredName}, here are the available products.
         </p>
-        <button
-          type="button"
-          className="view-purchases-button"
-          onClick={() => {
-    
-            navigate(`/purchases`, { state: { name: registeredName } })
-          }}
-        >
-          View Purchased Items
-        </button>
+
 
         {isLoading ? (
           <p>Loading products...</p>
@@ -78,7 +71,7 @@ function ProductsPage() {
                   className="purchase-button"
                   onClick={() => handlePurchase(product)}
                 >
-                  Purchase
+                  Add to Cart
                 </button>
               </li>
             ))}

@@ -21,8 +21,6 @@ const client = new Client({
     process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
 
-
-
 const app = express();
 const port = Number(process.env.PORT || 3000);
 // const allowedOrigin = process.env.CORS_ORIGIN || "*";
@@ -74,7 +72,6 @@ app.post("/signup", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-
   const query = "SELECT * FROM customers WHERE c_email = $1";
   client.query(query, [email], (err, result) => {
     console.log("🚀 ~ result:", result);
@@ -87,23 +84,20 @@ app.post("/login", (req, res) => {
     } else {
       if (result.rows.length > 0) {
         const user = result.rows[0];
-  
-        const decryptedPassword = cryptr.decrypt(user.password);  
-        console.log("🚀 ~ decryptedPassword:", decryptedPassword)
-        if (decryptedPassword === password) {
 
+        const decryptedPassword = cryptr.decrypt(user.password);
+        console.log("🚀 ~ decryptedPassword:", decryptedPassword);
+        if (decryptedPassword === password) {
           const token = jwt.sign(user, process.env.CRYPTR_SECRET, {
             expiresIn: "1h",
           });
 
-
           res.status(200).send({
             message: "User logged in successfully",
-            user: {...user,token:token},
+            user: { ...user, token: token },
             success: true,
           });
-        }
-        else {
+        } else {
           res.status(401).send({
             message: "Invalid email or password",
             success: false,
@@ -119,7 +113,6 @@ app.post("/login", (req, res) => {
   });
 });
 
-
 app.get("logout", authenticateToken, (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
 
@@ -129,7 +122,6 @@ app.get("logout", authenticateToken, (req, res) => {
     success: true,
   });
 });
-
 
 app.get("/products", authenticateToken, (req, res) => {
   const query = "SELECT * FROM products";
@@ -151,38 +143,256 @@ app.get("/products", authenticateToken, (req, res) => {
   });
 });
 
-app.post("/purchase", authenticateToken, (req, res) => {
+app.post("/add-to-cart", authenticateToken, (req, res) => {
   const customer_id = req.user.c_id;
-  console.log("🚀 ~ customcdcer_id:", customer_id);
+  console.log("🚀 ~ customcdcer_id:jhkjhjk", customer_id);
   const { product_id, quantity } = req.body;
-  const query = "INSERT INTO Orders (c_id) VALUES ($1) RETURNING o_id";
-  client.query(query, [customer_id], (err, result) => {
-    console.log("🚀 ~ result:", result);
-    if (err) {
-      console.error("Error purchasing product", err);
-      res.status(500).send({
-        message: "Error purchasing product",
-        success: false,
-      });
-    }
-    const order_id = result.rows[0].o_id;
-    const query =
-      "INSERT INTO order_items (o_id, p_id, item_count) VALUES ($1, $2, $3)";
-    client.query(query, [order_id, product_id, quantity], (err, result) => {
-      console.log("🚀 ~ result:", result);
+
+  const checkIfItemAlreadyInCart =
+    "Select item_count as count from my_cart where p_id=$1 and c_id=$2";
+
+  client.query(
+    checkIfItemAlreadyInCart,
+    [product_id, customer_id],
+    (err, result) => {
+      console.log("🚀 ~ resucdcdcdcdcclt:", result);
       if (err) {
-        console.error("Error purchasing product", err);
         res.status(500).send({
-          message: "Error purchasing product",
+          success: false,
+          message: "Internal server error",
+        });
+      } else {
+        const count = result.rows[0]?.count;
+        if (!count) {
+          const query =
+            "INSERT INTO  my_cart (c_id, p_id, item_count) VALUES ($1, $2, $3)";
+          client.query(
+            query,
+            [customer_id, product_id, quantity],
+            (err, result) => {
+              console.log("🚀 ~ redcdcdcsult:", result);
+              if (err) {
+                console.error("Error adding product to cart", err);
+                res.status(500).send({
+                  message: "Error adding product to cart",
+                  success: false,
+                });
+              } else {
+                res.status(200).send({
+                  message: "Product added to cart successfully",
+                  success: true,
+                });
+              }
+            },
+          );
+        } else {
+          const queryToIncreamentCount =
+            "update my_cart set item_count=$1 where p_id=$2 and c_id=$3";
+          client.query(
+            queryToIncreamentCount,
+            [count + 1, product_id, customer_id],
+            (err, result) => {
+              if (err) {
+                console.error("Error adding product to cart", err);
+                res.status(500).send({
+                  message: "Error adding product to cart",
+                  success: false,
+                });
+              } else {
+                res.status(200).send({
+                  message: "Product added to cart successfully",
+                  success: true,
+                });
+              }
+            },
+          );
+        }
+      }
+    },
+  );
+});
+
+app.post("/subtract-cart-item-count", authenticateToken, (req, resp) => {
+  const customer_id = req.user.c_id;
+  console.log("🚀 ~ customcdcer_id:jhkjhjk", customer_id);
+  const { product_id, quantity } = req.body;
+
+  if (quantity == 0) {
+    const query = "DELETE FROM my_cart where c_id = $1 and p_id = $2";
+    client.query(query, [customer_id, product_id], (err, result) => {
+      console.log("🚀 ~ redcdkhhkjkjcdcshghult:", result);
+      if (err) {
+        console.error("Error removing product from cart", err);
+        resp.status(500).send({
+          message: "Error removing product from cart",
           success: false,
         });
       } else {
-        res.status(200).send({
-          message: "Product purchased successfully",
+        resp.status(200).send({
+          message: "Product removed from cart successfully",
           success: true,
         });
       }
     });
+  } else {
+    const queryChangeCount =
+      "update my_cart set item_count=$1 where p_id=$2 and c_id=$3";
+    client.query(
+      queryChangeCount,
+      [quantity, product_id, customer_id],
+      (err, result) => {
+        if (err) {
+          console.error("Error adding product to cart", err);
+          resp.status(500).send({
+            message: "Error adding product to cart",
+            success: false,
+          });
+        } else {
+          resp.status(200).send({
+            message: "Product added to cart successfully",
+            success: true,
+          });
+        }
+      },
+    );
+  }
+});
+
+app.delete("/my-cart/:productId", authenticateToken, (req, res) => {
+  const customer_id = req.user.c_id;
+  console.log("🚀 ~ customcdcer_id:jhkjhjk", customer_id);
+  const { productId } = req.params;
+  console.log("🚀 ~ redcdkhhkjkjcdcsjhjjhghult:", productId);
+
+  const query = "DELETE FROM my_cart where c_id = $1 and p_id = $2";
+  client.query(query, [customer_id, productId], (err, result) => {
+    console.log("🚀 ~ redcdkhhkjkjcdcshghult:", result);
+    if (err) {
+      console.error("Error removing product from cart", err);
+      res.status(500).send({
+        message: "Error removing product from cart",
+        success: false,
+      });
+    } else {
+      res.status(200).send({
+        message: "Product removed from cart successfully",
+        success: true,
+      });
+    }
+  });
+});
+
+app.get("/my-cart", authenticateToken, (req, res) => {
+  const customer_id = req.user.c_id;
+  console.log("🚀 ~ customcdcer_id:jhkjhjk", customer_id);
+  const query =
+    "select pr.p_name, pr.p_id, mc.item_count,(mc.item_count*pr.p_price) as total_price  from my_cart mc Join products pr ON mc.p_id=pr.p_id WHERE mc.c_id = $1";
+
+  client.query(query, [customer_id], (err, result) => {
+    console.log("🚀 ~ redcdcdckjkksult:", result);
+    if (err) {
+      console.error("Error getting my cart", err);
+      res.status(500).send({
+        message: "Error getting my cart",
+        success: false,
+      });
+    } else {
+      res.status(200).send({
+        message: "My cart fetched successfully",
+        my_cart: result.rows,
+        success: true,
+      });
+    }
+  });
+});
+
+app.get("/cart-item-count", authenticateToken, (req, resp) => {
+  const customer_id = req.user.c_id;
+  const query_cartItem_count =
+    "Select count(cart_id) from my_cart where c_id=$1";
+  client.query(query_cartItem_count, [customer_id], (err, result) => {
+    console.log("🚀 ~ scsdcdcresp:", result);
+    if (err) {
+      resp.status(500).send({
+        message: "Inter nal server error",
+        success: false,
+      });
+    } else {
+      const itemCount = result.rows[0].count;
+      resp.status(200).send({
+        message: "cart items count fetched successfully",
+        success: true,
+        data: { cartItemCount: itemCount },
+      });
+    }
+  });
+});
+
+app.post("/purchase", authenticateToken, (req, res) => {
+  const customer_id = req.user.c_id;
+  console.log("🚀 ~ customcdcgjhghjer_id:", customer_id);
+
+  const query_for_my_cart =
+    "select  pr.p_id, mc.item_count  from my_cart mc Join products pr ON mc.p_id=pr.p_id WHERE mc.c_id = $1";
+
+  client.query(query_for_my_cart, [customer_id], (err, result1) => {
+    console.log("🚀 ~ result:", result1);
+    if (err) {
+      console.error("Error getting my cart", err);
+      res.status(500).send({
+        message: "Error getting my cart",
+        success: false,
+      });
+    } else {
+      const query = "INSERT INTO Orders (c_id) VALUES ($1) RETURNING o_id";
+
+      client.query(query, [customer_id], (err, result) => {
+        console.log("🚀 ~ result:", result);
+        if (err) {
+          console.error("Error purchasing product", err);
+          res.status(500).send({
+            message: "Error purchasing product",
+            success: false,
+          });
+        } else {
+          const order_id = result.rows[0].o_id;
+          result1.rows.forEach(async (row) => {
+            const { p_id, item_count } = row;
+            const query =
+              "INSERT INTO order_items (o_id, p_id, item_count) VALUES ($1, $2, $3)";
+            client.query(query, [order_id, p_id, item_count], (err, result) => {
+              console.log("🚀 ~ rescsd sc sc  scs ult:", result);
+              if (err) {
+                console.error("Erytror purchasing product", err);
+                res.status(500).send({
+                  message: "Error purchasing product",
+                  success: false,
+                });
+              }
+            });
+          });
+
+          const queryToRemoveCart = "Delete from my_cart where c_id = $1";
+          client.query(queryToRemoveCart, [customer_id], (err, result) => {
+            console.log("🚀 ~ err:", err);
+            console.log("🚀 ~ result:", result);
+            if (err) {
+              res.status(500).send({
+                message: "Error purchasing product",
+                success: false,
+              });
+            } else {
+              console.log("🚀 ~ rescsd sc c c sc  scs ult:", result);
+
+              res.status(200).send({
+                message: "Products purchased successfully",
+                success: true,
+              });
+            }
+          });
+        }
+      });
+    }
   });
 });
 
@@ -209,43 +419,7 @@ app.get("/purchases", authenticateToken, (req, res) => {
   });
 });
 
-app.delete("/remove-purchase/:orderId", authenticateToken, (req, res) => {
 
-  const { orderId } = req.params;
-  console.log("🚀 ~ orderId:", orderId);
-  const query = `
-   DELETE FROM order_items WHERE o_id = $1;
-    `;
-  client.query(query, [orderId], (err, result) => {
-    console.log("🚀 ~ result:", result);
-    if (err) {
-      console.error("Error removing purchase", err);
-      res.status(500).send({
-        message: "Error removing purchase",
-        success: false,
-      });
-    } else {
-      const query = `
-        DELETE FROM orders WHERE o_id = $1;
-        `;
-      client.query(query, [orderId], (err, result) => {
-        console.log("🚀 ~ result:", result);
-        if (err) {
-          console.error("Error removing purchase", err);
-          res.status(500).send({
-            message: "Error removing purchase",
-            success: false,
-          });
-        } else {
-          res.status(200).send({
-            message: "Purchase removed successfully",
-            success: true,
-          });
-        }
-      });
-    }
-  });
-});
 
 app.get("/", (req, res) => {
   res.send("Hello World");
