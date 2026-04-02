@@ -37,8 +37,8 @@ function LoginPage() {
         state: { name: user.c_name || 'User', customerId: user.c_id || null },
       })
     } catch (error) {
-      console.error(error)
-      window.alert('Login failed. Please try again.')
+      console.log ("usman", error.response.data.message)
+      window.alert(error.response.data.message??'Login failed. Please try again.')
     }
   }
 

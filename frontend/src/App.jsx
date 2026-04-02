@@ -12,43 +12,43 @@ function App() {
   return (
     <>
       <SiteBrand />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/products"
-          element={
-            <ProtectedRoute>
-              <ProductsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/purchases"
-          element={
-            <ProtectedRoute>
-              <PurchasedItemsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/purchases/:customerId"
-          element={
-            <ProtectedRoute>
-              <PurchasedItemsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-cart"
-          element={
-            <ProtectedRoute>
-              <MyCartPage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <ProductsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/purchases"
+        element={
+          <ProtectedRoute>
+            <PurchasedItemsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/purchases/:customerId"
+        element={
+          <ProtectedRoute>
+            <PurchasedItemsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-cart"
+        element={
+          <ProtectedRoute>
+            <MyCartPage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
     </>
   )
 }

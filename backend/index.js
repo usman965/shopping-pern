@@ -52,7 +52,7 @@ app.post("/signup", (req, res) => {
       console.log("🚀 ~ user:", user);
 
       const token = jwt.sign(user, process.env.CRYPTR_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "1d",
       }); // Token expires in 1 hour
       console.log("🚀 ~ token:", token);
 
@@ -89,7 +89,7 @@ app.post("/login", (req, res) => {
         console.log("🚀 ~ decryptedPassword:", decryptedPassword);
         if (decryptedPassword === password) {
           const token = jwt.sign(user, process.env.CRYPTR_SECRET, {
-            expiresIn: "1h",
+            expiresIn: "1d",
           });
 
           res.status(200).send({

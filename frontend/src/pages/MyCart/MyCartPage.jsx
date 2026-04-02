@@ -7,7 +7,6 @@ import AuthBar from "../../components/AuthBar/AuthBar";
 
 function MyCartPage() {
   const location = useLocation();
-  const navigate = useNavigate();
   const registeredName =
     location.state?.name || localStorage.getItem("customerName") || "User";
   const [myCart, setMyCart] = useState([]);
@@ -104,7 +103,6 @@ function MyCartPage() {
         <h1 id="products-heading">My Cart</h1>
         <p className="products-subtitle">Here are the products in your cart.</p>
 
-
         {isLoading ? (
           <p>Loading my cart...</p>
         ) : errorMessage ? (
@@ -153,16 +151,18 @@ function MyCartPage() {
           </ul>
         )}
 
-        <button
-          style={{
-            marginTop: "30px",
-          }}
-          type="button"
-          className="purchase-button"
-          onClick={() => handlePurchase()}
-        >
-          Purchase from Cart
-        </button>
+        {myCart.length > 0 && (
+          <button
+            style={{
+              marginTop: "30px",
+            }}
+            type="button"
+            className="purchase-button"
+            onClick={() => handlePurchase()}
+          >
+            Purchase from Cart
+          </button>
+        )}
       </section>
     </main>
   );
