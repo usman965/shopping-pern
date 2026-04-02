@@ -1,9 +1,17 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './SignUpPage.css'
-import apiClient, { AUTH_TOKEN_KEY } from '../../apiClient'
+import apiClient from '../../apiClient'
+import { hasUserSession, saveUserSession } from '../../userSession'
 
 function SignUpPage() {
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (hasUserSession()) {
+      navigate('/products', { replace: true })
+    }
+  }, [navigate])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -14,17 +22,14 @@ function SignUpPage() {
 
     try {
       const signupResponse = await apiClient.post('/signup', { name, email, password })
-      console.log("🚀 ~ handleSubmit ~ signupResponse:", signupResponse)
-      const signupToken = signupResponse.data?.user?.token
-      console.log("🚀 ~ handleSubmit ~ signupToken:", signupToken)
       const user = signupResponse.data?.user
+      const signupToken = signupResponse.data?.token ?? user?.token
 
-      if (signupToken) {
-        localStorage.setItem(AUTH_TOKEN_KEY, signupToken)
-      }
-
-      localStorage.setItem('customerId', String(user?.c_id || ''))
-      localStorage.setItem('customerName', user?.c_name || (typeof name === 'string' ? name : 'User'))
+      saveUserSession({
+        token: signupToken,
+        user,
+        fallbackName: typeof name === 'string' ? name : 'User',
+      })
       navigate('/products', {
         state: {
           name: user?.c_name || (typeof name === 'string' ? name : 'User'),

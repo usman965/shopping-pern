@@ -1,14 +1,12 @@
 import { useNavigate } from 'react-router-dom'
-import { AUTH_TOKEN_KEY } from '../../apiClient'
+import { clearUserSession } from '../../userSession'
 import './AuthBar.css'
 
 function AuthBar({ userName = 'User' }) {
   const navigate = useNavigate()
 
   const handleLogout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY)
-    localStorage.removeItem('customerId')
-    localStorage.removeItem('customerName')
+    clearUserSession()
     navigate('/login')
   }
 

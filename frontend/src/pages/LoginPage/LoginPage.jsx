@@ -1,9 +1,19 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import './LoginPage.css'
-import apiClient, { AUTH_TOKEN_KEY } from '../../apiClient'
+import apiClient from '../../apiClient'
+import { hasUserSession, saveUserSession } from '../../userSession'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from || '/products'
+
+  useEffect(() => {
+    if (hasUserSession()) {
+      navigate(from === '/login' ? '/products' : from, { replace: true })
+    }
+  }, [navigate, from])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -13,22 +23,17 @@ function LoginPage() {
 
     try {
       const response = await apiClient.post('/login', { email, password })
-      console.log("🚀 ~ handleSubmit ~ response:", response)
-      const token = response.data?.user?.token
       const user = response.data?.user
+      const token = response.data?.token ?? user?.token
 
       if (!user) {
         window.alert('No user found with this email.')
         return
       }
 
-      if (token) {
-        localStorage.setItem(AUTH_TOKEN_KEY, token)
-      }
-
-      localStorage.setItem('customerId', String(user.c_id || ''))
-      localStorage.setItem('customerName', user.c_name || 'User')
-      navigate('/products', {
+      saveUserSession({ token, user, fallbackName: user.c_name || 'User' })
+      navigate(from, {
+        replace: true,
         state: { name: user.c_name || 'User', customerId: user.c_id || null },
       })
     } catch (error) {
