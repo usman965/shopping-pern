@@ -84,15 +84,49 @@ function MyCartPage() {
     }
   };
 
-  const handlePurchase = async () => {
+
+
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async () => {
     try {
-      await apiClient.post("/purchase");
-      setMyCart([]);
-      notifyCartCountChanged();
-      window.alert(`Purchased products successfully.`);
-    } catch (error) {
-      console.error(error);
-      window.alert(`Failed to purchase products.`);
+      // Call your backend API to create a checkout session
+      const response = await apiClient.post("/create-checkout-session", {
+        method: "POST",
+        body: JSON.stringify({
+          // Add any data you need to send to your backend
+          // For example: amount, product details, etc.
+        }),
+      });
+
+      const data = response.data;
+      console.log("🚀 ~ handleSubmit ~ data:", data);
+
+      // Check for backend error
+      if (data.error) {
+        throw new Error(data.message || data.error);
+      }
+
+      // Use the hosted checkout URL if available, otherwise fallback to session ID
+      if (data.url) {
+        // Use the hosted checkout URL (recommended approach)
+        window.location.href = data.url;
+      } else {
+        // Fallback to session ID approach
+        const sessionId =
+          data.sessionId ||
+          data.checkoutSessionClientSecret?.split("_secret_")[0];
+
+        if (!sessionId) {
+          throw new Error("No session ID or URL received from server");
+        }
+
+        // Simple redirect to Stripe Checkout
+        window.location.href = `https://checkout.stripe.com/pay/${sessionId}`;
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      setError(err.message || "An error occurred while processing payment");
     }
   };
 
@@ -102,6 +136,8 @@ function MyCartPage() {
       <section className="products-card" aria-labelledby="products-heading">
         <h1 id="products-heading">My Cart</h1>
         <p className="products-subtitle">Here are the products in your cart.</p>
+
+        {error && <p>{error}</p>}
 
         {isLoading ? (
           <p>Loading my cart...</p>
@@ -158,9 +194,9 @@ function MyCartPage() {
             }}
             type="button"
             className="purchase-button"
-            onClick={() => handlePurchase()}
+            onClick={() => handleSubmit()}
           >
-            Purchase from Cart
+            Checkout
           </button>
         )}
       </section>

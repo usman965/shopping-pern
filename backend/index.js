@@ -7,6 +7,12 @@ import cors from "cors";
 import "dotenv/config";
 import authenticateToken from "./middlewares/tokenValidation.js";
 
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2025-03-31.basil",
+});
+
 console.log("🚀 ~ process.env.CRYPTR_SECRET:", process.env.CRYPTR_SECRET);
 
 const cryptr = new Cryptr(process.env.CRYPTR_SECRET);
@@ -282,6 +288,19 @@ app.delete("/my-cart/:productId", authenticateToken, (req, res) => {
   });
 });
 
+const getCartOfUserCOntroller = async (customer_id) => {
+  const query =
+    "select pr.p_name, pr.p_id, mc.item_count, pr.p_price from my_cart mc Join products pr ON mc.p_id=pr.p_id WHERE mc.c_id = $1";
+
+  try {
+    const result = await client.query(query, [customer_id]);
+
+    return result.rows;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
 app.get("/my-cart", authenticateToken, (req, res) => {
   const customer_id = req.user.c_id;
   console.log("🚀 ~ customcdcer_id:jhkjhjk", customer_id);
@@ -419,7 +438,100 @@ app.get("/purchases", authenticateToken, (req, res) => {
   });
 });
 
+app.get("/checkout-session/:sessionId", authenticateToken, async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(
+      req.params.sessionId,
+    );
+    const metaCid = session.metadata?.c_id;
+    if (metaCid != null && String(metaCid) !== String(req.user.c_id)) {
+      return res.status(403).json({
+        success: false,
+        message: "This checkout does not belong to the current user.",
+      });
+    }
+    if (session.payment_status !== "paid") {
+      return res.status(400).json({
+        success: false,
+        message: "Payment is not complete yet.",
+        payment_status: session.payment_status,
+      });
+    }
+    res.json({
+      success: true,
+      session: {
+        id: session.id,
+        payment_status: session.payment_status,
+        amount_total: session.amount_total,
+        currency: session.currency,
+        customer_email:
+          session.customer_details?.email || session.customer_email || null,
+      },
+    });
+  } catch (error) {
+    console.error("checkout-session retrieve:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to load checkout session",
+    });
+  }
+});
 
+app.post("/create-checkout-session", authenticateToken, async (req, res) => {
+  const customer_id = req.user.c_id;
+  const customer_email = req.user.c_email;
+
+  const users_cart = await getCartOfUserCOntroller(customer_id);
+  console.log("🚀 ~ users_cart:", users_cart);
+  const line_items = users_cart.map((cart_item) => {
+    return {
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: cart_item.p_name,
+          images: [
+            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUMSpaHXKhwIkuhc4h4KRh2tPnB60Kf5_UNw&s",
+          ],
+        },
+        unit_amount: cart_item.p_price * 100,
+      },
+      quantity: cart_item.item_count,
+    };
+  });
+  console.log("🚀 ~ line_items:", line_items);
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      line_items,
+      payment_method_types: ["card"],
+      mode: "payment",
+      ui_mode: "hosted",
+      success_url:
+        (process.env.FRONTEND_URL || "http://localhost:5173") +
+        "/checkout/success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "https://example.com/cancel",
+      customer_email: customer_email,
+      metadata: {
+        c_id: String(req.user.c_id),
+      },
+    });
+
+    console.log("🚀 ~ app.post ~ session:", session);
+
+    // Return both sessionId and client_secret for flexibility
+    res.json({
+      sessionId: session.id,
+      checkoutSessionClientSecret: session.client_secret,
+      url: session.url, // This is the hosted checkout URL
+    });
+  } catch (error) {
+    console.error("Error creating checkout session:", error);
+    res.status(500).json({
+      error: "Failed to create checkout session",
+      message: error.message,
+    });
+  }
+});
 
 app.get("/", (req, res) => {
   res.send("Hello World");
