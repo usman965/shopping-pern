@@ -8,7 +8,7 @@ import AuthBar from "../../components/AuthBar/AuthBar";
 function MyCartPage() {
   const location = useLocation();
   const registeredName =
-    location.state?.name || localStorage.getItem("customerName") || "User";
+    localStorage.getItem("customerName") || location.state?.name || "User";
   const [myCart, setMyCart] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");

@@ -8,6 +8,7 @@ import ProductsPage from './pages/ProductsPage/ProductsPage.jsx'
 import SignUpPage from './pages/SignUpPage/SignUpPage.jsx'
 import MyCartPage from './pages/MyCart/MyCartPage.jsx'
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage/CheckoutSuccessPage.jsx'
+import ProfilePage from './pages/ProfilePage/ProfilePage.jsx'
 
 function App() {
   return (
@@ -54,6 +55,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MyCartPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

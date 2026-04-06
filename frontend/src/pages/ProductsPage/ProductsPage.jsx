@@ -8,7 +8,8 @@ import AuthBar from '../../components/AuthBar/AuthBar'
 function ProductsPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const registeredName = location.state?.name || localStorage.getItem('customerName') || 'User'
+  const registeredName =
+    localStorage.getItem('customerName') || location.state?.name || 'User'
   const [products, setProducts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')

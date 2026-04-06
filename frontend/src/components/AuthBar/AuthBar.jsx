@@ -2,9 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../apiClient";
 import { CART_COUNT_CHANGED_EVENT } from "../../cartEvents";
+import { PROFILE_UPDATED_EVENT } from "../../profileEvents";
 import {
   clearUserSession,
   getStoredCustomerId,
+  getStoredCustomerName,
+  getStoredProfilePhoto,
 } from "../../userSession";
 import "./AuthBar.css";
 
@@ -21,7 +24,26 @@ function AuthBar({ userName = "User" }) {
   const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [displayName, setDisplayName] = useState(userName);
+  const [avatarPhotoUrl, setAvatarPhotoUrl] = useState(() =>
+    getStoredProfilePhoto(),
+  );
   const menuRef = useRef(null);
+
+  useEffect(() => {
+    setDisplayName(userName);
+  }, [userName]);
+
+  useEffect(() => {
+    const syncName = () =>
+      setDisplayName(getStoredCustomerName() || userName || "User");
+    window.addEventListener(PROFILE_UPDATED_EVENT, syncName);
+    window.addEventListener("storage", syncName);
+    return () => {
+      window.removeEventListener(PROFILE_UPDATED_EVENT, syncName);
+      window.removeEventListener("storage", syncName);
+    };
+  }, [userName]);
 
   const fetchCartCount = useCallback(async () => {
     try {
@@ -39,6 +61,16 @@ function AuthBar({ userName = "User" }) {
     window.addEventListener(CART_COUNT_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(CART_COUNT_CHANGED_EVENT, onChange);
   }, [fetchCartCount]);
+
+  useEffect(() => {
+    const syncAvatar = () => setAvatarPhotoUrl(getStoredProfilePhoto());
+    window.addEventListener(PROFILE_UPDATED_EVENT, syncAvatar);
+    window.addEventListener("storage", syncAvatar);
+    return () => {
+      window.removeEventListener(PROFILE_UPDATED_EVENT, syncAvatar);
+      window.removeEventListener("storage", syncAvatar);
+    };
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -79,15 +111,20 @@ function AuthBar({ userName = "User" }) {
     const customerId = getStoredCustomerId();
     if (customerId != null) {
       navigate(`/purchases/${customerId}`, {
-        state: { name: userName, customerId },
+        state: { name: displayName, customerId },
       });
     } else {
-      navigate("/purchases", { state: { name: userName } });
+      navigate("/purchases", { state: { name: displayName } });
     }
   };
 
+  const handleProfile = () => {
+    setMenuOpen(false);
+    navigate("/profile");
+  };
+
   const displayCount = cartCount === null ? "…" : String(cartCount);
-  const initials = getInitials(userName);
+  const initials = getInitials(displayName);
 
   return (
     <div className="auth-bar">
@@ -108,14 +145,30 @@ function AuthBar({ userName = "User" }) {
           aria-haspopup="true"
           onClick={() => setMenuOpen((o) => !o)}
         >
-          <span className="auth-bar-avatar-initials" aria-hidden>
-            {initials}
-          </span>
+          {avatarPhotoUrl ? (
+            <img
+              src={avatarPhotoUrl}
+              alt=""
+              className="auth-bar-avatar-image"
+            />
+          ) : (
+            <span className="auth-bar-avatar-initials" aria-hidden>
+              {initials}
+            </span>
+          )}
         </button>
 
         {menuOpen ? (
           <div className="auth-bar-dropdown" role="menu">
-            <div className="auth-bar-dropdown-header">{userName}</div>
+            <div className="auth-bar-dropdown-header">{displayName}</div>
+            <button
+              type="button"
+              className="auth-bar-dropdown-item"
+              role="menuitem"
+              onClick={handleProfile}
+            >
+              Profile
+            </button>
             <button
               type="button"
               className="auth-bar-dropdown-item"

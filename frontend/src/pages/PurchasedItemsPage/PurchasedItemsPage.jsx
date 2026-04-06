@@ -8,7 +8,8 @@ function PurchasedItemsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const params = useParams()
-  const customerName = location.state?.name || localStorage.getItem('customerName') || 'User'
+  const customerName =
+    localStorage.getItem('customerName') || location.state?.name || 'User'
   const [purchases, setPurchases] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')

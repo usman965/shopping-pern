@@ -82,9 +82,9 @@ app.post("/login", (req, res) => {
   client.query(query, [email], (err, result) => {
     console.log("🚀 ~ result:", result);
     if (err) {
-      console.error("Error logging in user", err);
+      console.error("Error updating profile", err);
       res.status(500).send({
-        message: "Error logging in user",
+        message: "Error updating profile",
         success: false,
       });
     } else {
@@ -115,6 +115,29 @@ app.post("/login", (req, res) => {
           success: false,
         });
       }
+    }
+  });
+});
+
+app.post("/update-profile", authenticateToken, (req, res) => {
+  const customer_id = req.user.c_id;
+  const { name } = req.body;
+
+  const query = "UPDATE customers SET c_name = $1 WHERE c_id = $2";
+  client.query(query, [name, customer_id], (err, result) => {
+    console.log("njjjkl  ::  ", result);
+    
+    if (err) {
+      console.error("Error updating profile", err);
+      res.status(500).send({
+        message: "Error updating profile",
+        success: false,
+      });
+    } else {
+      res.status(200).send({
+        message: "User updated successfully",
+        success: true,
+      });
     }
   });
 });
