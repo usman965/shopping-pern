@@ -7,6 +7,17 @@ import cors from "cors";
 import "dotenv/config";
 import authenticateToken from "./middlewares/tokenValidation.js";
 
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const clientAWS = new S3Client({
+  region: "ap-south-1",
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY_ID,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY,
+  },
+});
+
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -39,7 +50,7 @@ app.post("/signup", (req, res) => {
   const { name, email, password } = req.body;
   const encryptedPassword = cryptr.encrypt(password);
   const query =
-    "INSERT INTO customers (c_name, c_email, password) VALUES ($1, $2, $3) RETURNING c_id";
+    "INSERT INTO customers (c_name, c_email, password) VALUES ($1, $2, $3)   RETURNING c_id";
   console.log("🚀 ~ query:", query);
   client.query(query, [name, email, encryptedPassword], (err, result) => {
     console.log("🚀 ~ result:", result);
@@ -98,9 +109,12 @@ app.post("/login", (req, res) => {
             expiresIn: "1d",
           });
 
+          const user = { ...user, token: token };
+          delete user.password;
+
           res.status(200).send({
             message: "User logged in successfully",
-            user: { ...user, token: token },
+            user,
             success: true,
           });
         } else {
@@ -126,7 +140,7 @@ app.post("/update-profile", authenticateToken, (req, res) => {
   const query = "UPDATE customers SET c_name = $1 WHERE c_id = $2";
   client.query(query, [name, customer_id], (err, result) => {
     console.log("njjjkl  ::  ", result);
-    
+
     if (err) {
       console.error("Error updating profile", err);
       res.status(500).send({
@@ -558,6 +572,78 @@ app.post("/create-checkout-session", authenticateToken, async (req, res) => {
 
 app.get("/", (req, res) => {
   res.send("Hello World");
+});
+
+app.post("/get-presigned-url", authenticateToken, async (req, res) => {
+  try {
+    const { fileName, fileType } = req.body;
+    if (!fileName || !fileType || !String(fileType).startsWith("image/")) {
+      return res.status(400).json({
+        success: false,
+        message: "fileName and an image/* fileType are required.",
+      });
+    }
+    const safe = String(fileName)
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .slice(0, 180);
+    if (!safe) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid fileName." });
+    }
+    const bucket = "pern-learning";
+    const key = `uploads/${safe}`;
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: fileType,
+    });
+    const preSignedURL = await getSignedUrl(clientAWS, command, {
+      expiresIn: 900,
+    });
+    const region = "ap-south-1";
+    const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+    console.log("🚀 ~ publicUrl:", publicUrl);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        preSignedURL,
+        publicUrl,
+        key,
+      },
+    });
+  } catch (error) {
+    console.error("get-presigned-url:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create upload URL",
+    });
+  }
+});
+
+app.post("/update-profile-photo", authenticateToken, (req, resp) => {
+  const customer_id = req.user.c_id;
+
+  const { imagePath } = req.body;
+
+  const query = `update customers set c_avatar=$1 where c_id=$2 RETURNING c_avatar`;
+  client.query(query, [imagePath, customer_id], (err, result) => {
+    if (err) {
+      resp.status(500).send({
+        success: false,
+        message: "Error while setting profile photo",
+      });
+    } else {
+      resp.status(200).send({
+        success: true,
+        message: "Profile picture setted successfully",
+        data: {
+          profileURL: result.rows[0].c_avatar,
+        },
+      });
+    }
+  });
 });
 
 app.listen(port, () => {

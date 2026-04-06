@@ -6,6 +6,7 @@ const CUSTOMER_PHOTO_KEY = 'customerProfilePhoto'
 
 /**
  * Persist logged-in user (token + profile) for reloads / return visits.
+ * Avatar URL comes from API (e.g. c_avatar) so it shows in the header right after login.
  */
 export function saveUserSession({ token, user, fallbackName }) {
   const resolvedToken = token ?? user?.token
@@ -21,6 +22,24 @@ export function saveUserSession({ token, user, fallbackName }) {
   const name = user?.c_name ?? fallbackName
   if (name) {
     localStorage.setItem(CUSTOMER_NAME_KEY, name)
+  }
+
+  const avatarUrl =
+    user?.c_avatar ??
+    user?.c_avatar_url ??
+    user?.avatarUrl ??
+    user?.avatar ??
+    null
+  if (avatarUrl != null && String(avatarUrl).trim() !== '') {
+    localStorage.setItem(CUSTOMER_PHOTO_KEY, String(avatarUrl).trim())
+  } else if (
+    user != null &&
+    Object.prototype.hasOwnProperty.call(user, 'c_avatar')
+  ) {
+    const raw = user.c_avatar
+    if (raw == null || raw === '') {
+      localStorage.removeItem(CUSTOMER_PHOTO_KEY)
+    }
   }
 }
 
