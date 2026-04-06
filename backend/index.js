@@ -109,12 +109,12 @@ app.post("/login", (req, res) => {
             expiresIn: "1d",
           });
 
-          const user = { ...user, token: token };
+          const userFound = { ...user, token: token };
           delete user.password;
 
           res.status(200).send({
             message: "User logged in successfully",
-            user,
+            user:userFound,
             success: true,
           });
         } else {
