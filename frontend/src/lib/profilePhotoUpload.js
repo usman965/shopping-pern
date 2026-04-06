@@ -4,6 +4,8 @@ import { getStoredCustomerId } from '../userSession'
 const MAX_FILE_BYTES = 8 * 1024 * 1024
 const MAX_BLOB_BYTES = 500_000
 
+
+
 /**
  * Resize/compress image to JPEG Blob for S3 upload.
  */
@@ -75,7 +77,7 @@ export async function compressImageFileToJpegBlob(file) {
  */
 export async function uploadProfilePhotoViaPresignedUrl(jpegBlob) {
   const customerId = getStoredCustomerId() ?? 'anon'
-  const fileName = `profile-${customerId}-${crypto.randomUUID()}.jpg`
+  const fileName = `profile-${customerId}-${Date.now()}.jpg`
   const fileType = 'image/jpeg'
 
   const { data } = await apiClient.post('/get-presigned-url', {
@@ -87,8 +89,7 @@ export async function uploadProfilePhotoViaPresignedUrl(jpegBlob) {
     throw new Error(data?.message || 'Could not get upload URL.')
   }
 
-  const { preSignedURL, publicUrl, key } = data.data
-  console.log("🚀 ~ uploadProfilePhotoViaPresignedUrl ~ publicUrl:", publicUrl)
+  const { preSignedURL, publicUrl } = data.data
 
   const putRes = await fetch(preSignedURL, {
     method: 'PUT',
@@ -105,12 +106,8 @@ export async function uploadProfilePhotoViaPresignedUrl(jpegBlob) {
     )
   }
 
-
-
-
-
   const saveMeta = await apiClient.post('/update-profile-photo', {
-    imagePath:publicUrl,
+    imagePath: publicUrl,
   })
 
   if (!saveMeta.data?.success) {
@@ -120,5 +117,5 @@ export async function uploadProfilePhotoViaPresignedUrl(jpegBlob) {
     )
   }
 
-  return saveMeta.data?.data?.profileURL || imagePath
+  return saveMeta.data?.data?.profileURL || publicUrl
 }

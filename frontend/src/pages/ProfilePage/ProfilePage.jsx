@@ -72,7 +72,10 @@ function ProfilePage() {
     try {
       const blob = await compressImageFileToJpegBlob(file);
       const publicUrl = await uploadProfilePhotoViaPresignedUrl(blob);
-      setStagedPhoto(publicUrl);
+      setStoredProfilePhoto(publicUrl);
+      setStoredPhotoState(publicUrl);
+      setStagedPhoto(undefined);
+      notifyProfileUpdated();
     } catch (e) {
       console.error(e);
       setError(
@@ -136,9 +139,8 @@ function ProfilePage() {
       <section className="profile-card" aria-labelledby="profile-heading">
         <h1 id="profile-heading">Your profile</h1>
         <p className="profile-subtitle">
-          Your name is saved to your account. Photos upload to cloud storage
-          when you pick an image; the link is saved on this device until you
-          save.
+          Your name is saved when you click Save changes. Profile photos upload
+          immediately and are stored on your account and this device.
         </p>
 
         <div className="profile-avatar-block">
