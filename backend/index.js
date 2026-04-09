@@ -40,8 +40,18 @@ const client = new Client({
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+
+
+
+app.use(cors({
+  origin: ['https://devusmanasghar.site', 'https://www.devusmanasghar.site'],
+  credentials: true
+}));
+
+
+
 // const allowedOrigin = process.env.CORS_ORIGIN || "*";
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 
 app.post("/signup", (req, res) => {
