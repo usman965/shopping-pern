@@ -38,7 +38,7 @@ function SignUpPage() {
       })
     } catch (error) {
       console.error(error)
-      window.alert('Sign up failed. Please try again.')
+      window.alert(error.response?.data?.message ?? 'Sign up failed. Please try again.')
     }
   }
 

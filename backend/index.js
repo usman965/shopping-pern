@@ -19,6 +19,8 @@ const clientAWS = new S3Client({
 });
 
 import Stripe from "stripe";
+import DB_ERRORS from "./constants/dbErrors.js";
+import DB_ERROR_MESSAGES from "./constants/dbErrorMessages.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-03-31.basil",
@@ -44,11 +46,18 @@ const port = Number(process.env.PORT || 3000);
 
 
 app.use(cors({
-  origin: ['https://devusmanasghar.site', 'https://www.devusmanasghar.site'],
+  origin: [
+    'https://devusmanasghar.site',
+    'https://www.devusmanasghar.site',
+    'http://localhost:5173'
+  ],
   credentials: true
 }));
 
-
+// app.use(cors({
+//   origin: ['http://localhost:5173/'],
+//   credentials: true
+// }));
 
 // const allowedOrigin = process.env.CORS_ORIGIN || "*";
 // app.use(cors());
@@ -65,11 +74,19 @@ app.post("/signup", (req, res) => {
   client.query(query, [name, email, encryptedPassword], (err, result) => {
     console.log("🚀 ~ result:", result);
     if (err) {
-      console.error("Error inserting user", err);
-      res.status(500).send({
-        message: "Error inserting user",
-        success: false,
-      });
+      console.error("Error inserting user", err.code);
+
+      if (err.code == DB_ERRORS.UNIQUE_VIOLATION) {
+        res.status(500).send({
+          message: DB_ERROR_MESSAGES.UNIQUE_VIOLATION,
+          success: false,
+        });
+      } else {
+        res.status(500).send({
+          message: "Error inserting user",
+          success: false,
+        });
+      }
     } else {
       const user = {
         email: email,
@@ -103,7 +120,7 @@ app.post("/login", (req, res) => {
   client.query(query, [email], (err, result) => {
     console.log("🚀 ~ result:", result);
     if (err) {
-      console.error("Error updating profile", err);
+      console.error("Error updating profile", err.code);
       res.status(500).send({
         message: "Error updating profile",
         success: false,
@@ -124,7 +141,7 @@ app.post("/login", (req, res) => {
 
           res.status(200).send({
             message: "User logged in successfully",
-            user:userFound,
+            user: userFound,
             success: true,
           });
         } else {
