@@ -47,8 +47,8 @@ const port = Number(process.env.PORT || 3000);
 
 app.use(cors({
   origin: [
-    'https://devusmanasghar.site',
-    'https://www.devusmanasghar.site',
+    'https://shop-demo.devusmanasghar.site',
+    'https://www.shop-demo.devusmanasghar.site',
     'http://localhost:5173'
   ],
   credentials: true
